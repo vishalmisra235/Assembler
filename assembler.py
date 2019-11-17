@@ -52,6 +52,7 @@ dest_table['MD']='011'
 dest_table['A']='100'
 dest_table['AM']='101'
 dest_table['AD']='110'
+dest_table['AMD']='111'
 
 jmp_table['JGT']='001'
 jmp_table['JEQ']='010'
@@ -72,6 +73,7 @@ def convert(all_lines):
         index += 1
 
     index=0
+    curr_mem = 16
     for line in all_lines:
         if line[0]=='@':
             text = line[1:]
@@ -83,7 +85,12 @@ def convert(all_lines):
             else:
                 text=line[1:]
                 num = table.get(text)
-                new_set_lines.append('@'+str(num))
+                if num is not None:
+                    new_set_lines.append('@'+str(num))
+                else:
+                    new_set_lines.append('@'+str(curr_mem))
+                    table[line[1:]] = curr_mem
+                    curr_mem = curr_mem + 1
                 
         elif line[0]=='(':
             index += 1
@@ -101,6 +108,7 @@ def A_instruction(line):
     print(num.zfill(16))
     f2.write(num.zfill(16))
     f2.write('\n')
+    
 
 def C_instruction(line):
     index=line.find(';')
@@ -148,13 +156,13 @@ def check_A_C_instruction(new_set_lines):
 
 all_lines=[]
 for lines in f1:
-    new_line = (lines.replace('\n','')).replace(' ','')
+    new_line = ((lines.replace('\n','')).replace(' ','')).replace('\t','')
     new_line=re.sub('//.*','',str(new_line))
     if new_line!='': 
         all_lines.append(new_line)
 
 new_set_lines = convert(all_lines)
-
+print(new_set_lines)
 check_A_C_instruction(new_set_lines)
 f1.close()
 f2.close()
