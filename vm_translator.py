@@ -68,7 +68,7 @@ def translator(commands):
             new_command += '@15\nD=M\n@18\nD=D-M\n'
             new_command += '@FUNC_'+str(function_counter)
             new_command += '\nD;'+log_table.get(command[0])
-            new_command += '\nD=0\n'
+            new_command += '\nD=-1\n'
             new_command += '@END_'+str(function_counter)
             new_command += '\n0;JMP\n'
             new_command += '(FUNC_'+str(function_counter)+')'
@@ -82,7 +82,7 @@ def translator(commands):
             new_command = '('+command[1]+')\n'
             hackfile.write(new_command)
             
-        elif command[0] == 'goto:':
+        elif command[0] == 'goto':
             new_command = '@'+command[1]+'\n0;JMP\n'
             hackfile.write(new_command)
             
@@ -90,6 +90,40 @@ def translator(commands):
             new_command = '@SP\nAM=M-1\nD=M\n@'+command[1]+'\nD;JNE\n'
             hackfile.write(new_command)
 
+        elif command[0] == 'function':
+            new_command = '('+command[1]+')\n'
+            n_times = int(command[2])
+            for i in range(n_times):
+                new_command += '@0\nD=A\n@SP\nA=M\nM=D\n@SP\nM=M+1\n'
+            hackfile.write(new_command)
+
+        elif command[0] == 'return':
+            #endFrame=R14
+            #retAddr=R15
+            new_command = '@LCL\nD=M\n@R14\nM=D\n'
+            new_command += '@5\nA=D-A\nD=M\n@R15\nM=D\n'
+            new_command += '@SP\nAM=M-1\nD=M\n@ARG\nA=M\nM=D\n'
+            new_command += '@ARG\nD=M\nD=D+1\n@SP\nM=D\n'
+            addr = ['THAT','THIS','ARG','LCL']
+            counter=1
+            for i in addr:
+                new_command += '@R14\nD=M\n@'+str(counter)+'\nD=D-A\n@'+i+'\nM=D\n'
+            new_command += '@R15\n0;JMP\n'
+            hackfile.write(new_command)
+
+        elif command[0] == 'call':
+            new_command = '@'+command[1]
+            new_command += '\nD=A\n@SP\nA=M\nM=D\n@SP\nM=M+1\n'
+            addr = ['LCL','ARG','THIS','THAT']
+            counter=3
+            for i in addr:
+                new_command += '@'+i+'\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n'
+            new_command += '@SP\nD=M\n@5\nD=D-A\n@'+command[2]+'\nD=D-A\n@ARG\nM=D\n'
+            new_command += '@SP\nD=M\n@LCL\nM=D\n'
+            new_command += '@'+command[1]+'\n0;JMP\n'
+            new_command += '('+command[1]+')\n'
+            hackfile.write(new_command)
+                
 argumentList = sys.argv
 fname = sys.argv[1].rstrip()
 
